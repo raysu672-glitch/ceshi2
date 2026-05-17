@@ -268,7 +268,10 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
     <div class="card">
       <h3 style="font-size:16px;font-weight:700;margin-bottom:4px">Section 2 (Questions 11-20)</h3>
       <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Questions 11-15: Choose A, B or C.</p>
-      <button class="btn-audio" id="btnListen2" onclick="playListening2()"><i class="fas fa-volume-up"></i> 播放录音 (Section 2)</button>
+      <audio controls style="width:100%;margin:16px 0;">
+        <source src="listening_section2.mp3" type="audio/mpeg">
+        您的浏览器不支持音频播放。
+      </audio>
       <div id="listeningSection2Q11to15"></div>
       <p style="font-size:14px;font-weight:600;margin:24px 0 12px;color:var(--primary-dark)">Questions 16-20: Label the plan below.</p>
       <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">Write the correct letter, <strong>A-I</strong>.</p>
@@ -721,11 +724,7 @@ function playDictation(){
   next();
 }
 
-function playListening2(){
-  var btn=document.getElementById('btnListen2');btn.classList.add('playing');btn.innerHTML='<i class="fas fa-volume-up"></i> 正在播放...';
-  var s="Now let me tell you about the work placement at the museum. On Monday, the students' working day will be from 9 a.m. to 4:45 p.m. While working in the museum, students are encouraged to wear their own casual clothes. If students are late or going to be late, they must inform their museum supervisor. The most popular task whilst on work placement is usually conducting workshops in the museum. Students really enjoy interacting with visitors this way. The best form of preparation before starting the work placement is to read the museum regulations and safety guidance. Now let me show you the museum floor plan. The students' meeting point is at B. The place where talks are given is D. The place where students work with visitors is H. The largest room in the museum is F. And the place where students can buy refreshments is C.";
-  speak(s,0.9,function(){btn.classList.remove('playing');btn.innerHTML='<i class="fas fa-volume-up"></i> 播放录音 (Section 2)';showToast('Section 2 录音播放完毕')});
-}
+
 
 function playSpeakingDemo(){
   var btn=document.getElementById('btnSpeakDemo');btn.classList.add('playing');btn.innerHTML='<i class="fas fa-volume-up"></i> 正在播放...';
