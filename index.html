@@ -229,7 +229,10 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
   <div class="container">
     <div class="section-header fade-in"><h2>Part 3: 听写词汇综合测试</h2><div class="section-meta"><span><i class="fas fa-list-ol"></i> 20题</span><span><i class="fas fa-clock"></i> 3分钟</span></div></div>
     <div class="instructions"><i class="fas fa-info-circle"></i><span>根据录音听写出相应的单词或短语。点击"播放录音"按钮听取单词，然后在输入框中填写。</span></div>
-    <button class="btn-audio" id="btnDictation" onclick="playDictation()"><i class="fas fa-volume-up"></i> 播放录音</button>
+    <audio controls style="width:100%;margin:16px 0;">
+      <source src="dictation_audio.mp3" type="audio/mpeg">
+      您的浏览器不支持音频播放。
+    </audio>
     <div class="card"><div class="dictation-grid" id="dictationGrid"></div></div>
     <div class="nav-buttons"><button class="btn-nav btn-prev" onclick="goToSection(2)"><i class="fas fa-arrow-left"></i> 上一部分</button><button class="btn-nav btn-next" onclick="goToSection(4)">下一部分 <i class="fas fa-arrow-right"></i></button></div>
   </div>
@@ -714,15 +717,7 @@ function speak(text,rate,onEnd){
 }
 if('speechSynthesis' in window){window.speechSynthesis.getVoices();window.speechSynthesis.onvoiceschanged=function(){window.speechSynthesis.getVoices()}}
 
-function playDictation(){
-  var btn=document.getElementById('btnDictation');btn.classList.add('playing');btn.innerHTML='<i class="fas fa-volume-up"></i> 正在播放...';
-  var idx=0;
-  function next(){
-    if(idx>=dictationWords.length){btn.classList.remove('playing');btn.innerHTML='<i class="fas fa-volume-up"></i> 播放录音';showToast('录音播放完毕');return}
-    speak(dictationWords[idx],0.75,function(){idx++;setTimeout(next,1500)});
-  }
-  next();
-}
+
 
 
 
