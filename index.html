@@ -461,9 +461,9 @@ var grammarQuestions=[
   {q:'New York and Chicago are similar _______ they\'re both densely populated metropolises in America.',options:['in which','in that','by which','to that'],answer:1,explain:'in that 是固定搭配，意为"因为、在于"，用于解释说明。'}
 ];
 
-var dictationWords=['accommodation','environment','sustainable','approximately','nevertheless','questionnaire','particularly','infrastructure','consequently','telecommunications','approximately','curriculum','extraordinary','pharmaceutical','comprehensive','nevertheless','entrepreneur','simultaneously','approximately','telecommunications'];
+var dictationWords=['breed','burglar','catalogue','vacuum','armchair','feedback','guidebook','accommodation','schedule','laboratories','gallery','Wednesday','soccer','insurance','endangered','restaurant','seasoned','bedsheet','suncream','J6337'];
 
-var listeningAnswers={1:'winter',2:'trustedtraders',3:'free',4:'punctual',5:'cheaper',6:'rude',7:'jobs',8:'expensive',9:'plumbing',10:'contracts'};
+var listening1Answers={1:'weekend',2:'plasdeco',3:'clear',4:'late',5:'cheaper',6:'messy',7:'designs',8:'expensive',9:'painting',10:'ladder'};
 
 var listeningMCQ=[
   {q:'Q11. On Monday, what will be the students\' working day?',options:['A. 9.00 a.m.~5.00 p.m.','B. 8.45 a.m.~5.00 p.m.','C. 9.00 a.m.~4.45 p.m.'],answer:2,explain:'学生工作时间为 9:00 a.m. 到 4:45 p.m.'},
@@ -751,7 +751,7 @@ function calculateScores(){
   scores.dictation={correct:dc,total:20,time:sectionStartTime[3]||0};
 
   var lc=0;
-  for(var i=1;i<=10;i++){var inp=document.getElementById('listen'+i);if(inp){var v=inp.value.trim().toLowerCase().replace(/\s+/g,'');if(v===listeningAnswers[i].toLowerCase().replace(/\s+/g,''))lc++}}
+  for(var i=1;i<=10;i++){var inp=document.getElementById('listen'+i);if(inp){var v=inp.value.trim().toLowerCase().replace(/\s+/g,'');if(v===listening1Answers[i].toLowerCase().replace(/\s+/g,''))lc++}}
   listeningMCQ.forEach(function(item,idx){if(userAnswers['listenMCQ_'+idx]===item.answer)lc++});
   for(var i=0;i<5;i++){var qn=i+16;if(userAnswers['listenPlan_'+i]===listeningPlanAnswers[qn])lc++}
   scores.listening={correct:lc,total:20,time:sectionStartTime[4]||0};
@@ -771,7 +771,13 @@ function calculateScores(){
   return scores;
 }
 
-function getBandScore(pct){if(pct>=95)return 9;if(pct>=88)return 8;if(pct>=80)return 7;if(pct>=70)return 6;if(pct>=58)return 5;if(pct>=45)return 4;if(pct>=30)return 3;if(pct>=15)return 2;return 1}
+function getListeningBand(listeningCorrect,dictationCorrect){
+  if(listeningCorrect>=19)return 7.5;if(listeningCorrect>=18)return 7.0;if(listeningCorrect>=16)return 6.5;if(listeningCorrect>=15)return 6.0;if(listeningCorrect>=14)return 5.5;if(listeningCorrect>=12)return 5.0;if(listeningCorrect>=10)return 4.5;if(listeningCorrect>=8)return 4.0;if(listeningCorrect>=6)return 3.5;if(listeningCorrect>=4)return 3.0;return 2.5;
+}
+function getReadingBand(readingCorrect,vocabCorrect){
+  if(readingCorrect>=19)return 7.5;if(readingCorrect>=18)return 7.0;if(readingCorrect>=16)return 6.5;if(readingCorrect>=15)return 6.0;if(readingCorrect>=14)return 5.5;if(readingCorrect>=12)return 5.0;if(readingCorrect>=10)return 4.5;if(readingCorrect>=8)return 4.0;if(readingCorrect>=6)return 3.5;if(readingCorrect>=4)return 3.0;return 2.5;
+}
+function getOverallBand(listeningBand,readingBand){return Math.round((listeningBand+readingBand)/2*2)/2;}
 function getScoreColor(pct){if(pct>=90)return'#F59E0B';if(pct>=75)return'#10B981';if(pct>=60)return'#84CC16';if(pct>=40)return'#F97316';return'#EF4444'}
 function formatTime(s){var m=Math.floor(s/60);var ss=s%60;return m+'分'+ss+'秒'}
 
@@ -780,7 +786,10 @@ function showResults(scores){
   var autoTotal=scores.vocab.correct+scores.grammar.correct+scores.dictation.correct+scores.listening.correct+scores.reading.correct;
   var autoMax=scores.vocab.total+scores.grammar.total+scores.dictation.total+scores.listening.total+scores.reading.total;
   var pct=Math.round((autoTotal/autoMax)*100);
-  var band=getBandScore(pct);var color=getScoreColor(pct);
+  var listeningBand=getListeningBand(scores.listening.correct,scores.dictation.correct);
+  var readingBand=getReadingBand(scores.reading.correct,scores.vocab.correct);
+  var band=getOverallBand(listeningBand,readingBand);
+  var color=getScoreColor(pct);
 
   var arc=document.getElementById('scoreArc');var circ=2*Math.PI*80;var offset=circ-(pct/100)*circ;
   arc.style.stroke=color;arc.style.transition='stroke-dashoffset 1.5s ease';
