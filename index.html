@@ -6,6 +6,7 @@
 <title>雅思综合水平测试 - 藕叶英语教研组研发</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
 :root{--primary:#2563EB;--primary-light:#3B82F6;--primary-dark:#1D4ED8;--secondary:#0891B2;--secondary-light:#06B6D4;--accent:#F59E0B;--success:#10B981;--success-light:#D1FAE5;--error:#EF4444;--error-light:#FEE2E2;--warning:#F59E0B;--bg:#F8FAFC;--card:#FFFFFF;--text:#1E293B;--text-light:#64748B;--text-lighter:#94A3B8;--border:#E2E8F0;--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);--shadow-md:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);--radius:12px;--radius-sm:8px;--radius-lg:16px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -199,6 +200,17 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
     <h1 class="main-title">雅思综合水平测试</h1>
     <p class="subtitle">藕叶英语教研组研发</p>
     <div class="time-badge"><i class="fas fa-clock"></i> 总时长：80分钟</div>
+    <div class="student-info" style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:24px;text-align:left;max-width:400px;margin-left:auto;margin-right:auto">
+      <h3 style="font-size:15px;font-weight:600;margin-bottom:16px;color:var(--primary)"><i class="fas fa-user"></i> 学生信息</h3>
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:13px;color:var(--text-light);margin-bottom:6px">姓名 *</label>
+        <input type="text" id="studentName" placeholder="请输入你的姓名" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;color:var(--text-light);margin-bottom:6px">邮箱（选填）</label>
+        <input type="email" id="studentEmail" placeholder="请输入你的邮箱" style="width:100%;padding:10px 14px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit">
+      </div>
+    </div>
     <div class="section-cards">
       <div class="section-card"><div class="sc-num">Part 1</div><div class="sc-name">词汇量综合测试</div><div class="sc-time"><i class="fas fa-clock"></i> 8分钟</div></div>
       <div class="section-card"><div class="sc-num">Part 2</div><div class="sc-name">语法综合测试</div><div class="sc-time"><i class="fas fa-clock"></i> 5分钟</div></div>
@@ -441,6 +453,47 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
 </div>
 
 <script>
+// ===== EMAILJS CONFIG =====
+// 请替换为您的 EmailJS 配置
+var EMAILJS_CONFIG = {
+  publicKey: 'YOUR_PUBLIC_KEY',      // 从 EmailJS 控制台获取
+  serviceId: 'YOUR_SERVICE_ID',      // 从 EmailJS 邮件服务获取
+  templateId: 'YOUR_TEMPLATE_ID'     // 从 EmailJS 模板获取
+};
+
+// 初始化 EmailJS
+(function(){
+  if(EMAILJS_CONFIG.publicKey !== 'YOUR_PUBLIC_KEY'){
+    emailjs.init(EMAILJS_CONFIG.publicKey);
+  }
+})();
+
+// 发送成绩报告给老师
+function sendReportToTeacher(reportHtml, studentInfo){
+  if(EMAILJS_CONFIG.publicKey === 'YOUR_PUBLIC_KEY'){
+    console.log('EmailJS 未配置，跳过邮件发送');
+    return Promise.resolve({status: 'skipped'});
+  }
+  
+  var teacherEmail = localStorage.getItem('teacherEmail') || 'teacher@example.com';
+  
+  return emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
+    to_email: teacherEmail,
+    student_name: studentInfo.name || '未知学生',
+    student_email: studentInfo.email || '',
+    test_date: new Date().toLocaleString('zh-CN'),
+    total_score: studentInfo.totalScore || '0%',
+    band_score: studentInfo.band || '-',
+    report_html: reportHtml
+  }).then(function(response){
+    console.log('邮件发送成功:', response);
+    return {status: 'success', response: response};
+  }).catch(function(error){
+    console.error('邮件发送失败:', error);
+    return {status: 'error', error: error};
+  });
+}
+
 // ===== DATA =====
 var SECTIONS=[
   {id:1,name:'词汇量综合测试',time:480},{id:2,name:'语法综合测试',time:300},
@@ -817,6 +870,32 @@ function submitTest(){
   document.getElementById('progressBarContainer').classList.remove('active');
   var scores=calculateScores();
   showResults(scores);
+  
+  // 自动生成报告并发送给老师
+  setTimeout(function(){
+    var reportHtml = generateReportHtml(scores);
+    var studentName = document.getElementById('studentName')?.value || '未知学生';
+    var studentEmail = document.getElementById('studentEmail')?.value || '';
+    var autoTotal=scores.vocab.correct+scores.grammar.correct+scores.dictation.correct+scores.listening.correct+scores.reading.correct;
+    var autoMax=scores.vocab.total+scores.grammar.total+scores.dictation.total+scores.listening.total+scores.reading.total;
+    var pct=Math.round((autoTotal/autoMax)*100);
+    var listeningBand=getListeningBand(scores.listening.correct,scores.dictation.correct);
+    var readingBand=getReadingBand(scores.reading.correct,scores.vocab.correct);
+    var band=getOverallBand(listeningBand,readingBand);
+    
+    sendReportToTeacher(reportHtml, {
+      name: studentName,
+      email: studentEmail,
+      totalScore: pct+'%',
+      band: band
+    }).then(function(result){
+      if(result.status === 'success'){
+        showToast('成绩报告已发送给老师！');
+      } else if(result.status === 'error'){
+        showToast('发送失败，请手动下载发送');
+      }
+    });
+  }, 500);
 }
 
 function calculateScores(){
@@ -952,23 +1031,11 @@ function showResults(scores){
 
 function toggleResultSection(idx){var body=document.getElementById('resultBody_'+idx);var header=body.previousElementSibling;body.classList.toggle('open');header.classList.toggle('open')}
 
-function downloadResults(){
-  var data=localStorage.getItem('ieltsResults');
-  if(!data){alert('暂无保存的成绩');return;}
-  var saved=JSON.parse(data);
-  var scores=saved.scores;
-  // Get writing content from current page inputs (latest data)
-  var wc={
-    task1_part1: (document.getElementById('writing1_part1')||{}).value||((scores.writingContent||{}).task1_part1)||'',
-    task1_part2: (document.getElementById('writing1_part2')||{}).value||((scores.writingContent||{}).task1_part2)||'',
-    task1_part3: (document.getElementById('writing1_part3')||{}).value||((scores.writingContent||{}).task1_part3)||'',
-    task2_part1: (document.getElementById('writing2_part1')||{}).value||((scores.writingContent||{}).task2_part1)||'',
-    task2_part2: (document.getElementById('writing2_part2')||{}).value||((scores.writingContent||{}).task2_part2)||''
-  };
-  // Use current speakingRecordings (base64) instead of saved data (may contain blob URLs)
+// 生成报告HTML（用于下载或发送邮件）
+function generateReportHtml(scores){
+  var wc=scores.writingContent||{};
   var recs=speakingRecordings||{};
 
-  // Build speaking audio HTML
   function audioBlock(label,id){
     if(recs[id]){
       return '<div style="margin-bottom:10px"><div style="font-size:13px;color:#666;margin-bottom:4px">'+label+'</div><audio controls src="'+recs[id]+'" style="width:100%;max-width:400px"></audio></div>';
@@ -976,13 +1043,11 @@ function downloadResults(){
     return '<div style="margin-bottom:10px"><div style="font-size:13px;color:#666;margin-bottom:4px">'+label+'</div><div style="color:#999;font-size:13px">未录音</div></div>';
   }
 
-  // Build writing content HTML
   function writingBlock(label,value){
     var v=value||'<span style="color:#999">未作答</span>';
     return '<div style="margin-bottom:12px"><div style="font-size:13px;color:#666;margin-bottom:4px">'+label+'</div><div style="background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:10px;font-size:14px;line-height:1.6;min-height:36px;white-space:pre-wrap">'+v+'</div></div>';
   }
 
-  // Build review items for auto-scored sections
   function buildReviewHTML(key){
     var h='';
     if(key==='vocab'){
@@ -1042,23 +1107,25 @@ function downloadResults(){
   var autoTotal=scores.vocab.correct+scores.grammar.correct+scores.dictation.correct+scores.listening.correct+scores.reading.correct;
   var autoMax=scores.vocab.total+scores.grammar.total+scores.dictation.total+scores.listening.total+scores.reading.total;
   var pct=Math.round((autoTotal/autoMax)*100);
+  var listeningBand=getListeningBand(scores.listening.correct,scores.dictation.correct);
+  var readingBand=getReadingBand(scores.reading.correct,scores.vocab.correct);
+  var band=getOverallBand(listeningBand,readingBand);
 
   var html='<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>雅思综合水平测试成绩报告</title>';
   html+='<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1a202c;line-height:1.6;padding:20px;max-width:900px;margin:0 auto;background:#fff}';
   html+='h1{text-align:center;font-size:22px;color:#2563eb;margin-bottom:4px}h2{font-size:16px;color:#2563eb;margin:20px 0 12px;padding-bottom:6px;border-bottom:2px solid #e2e8f0}';
-  html+'.meta{text-align:center;color:#64748b;font-size:13px;margin-bottom:24px}';
-  html+'.score-box{text-align:center;padding:20px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border-radius:12px;margin-bottom:24px}';
-  html+'.score-big{font-size:48px;font-weight:700;color:#2563eb}.score-label{color:#64748b;font-size:14px}';
-  html='.band{display:inline-block;padding:6px 16px;background:#2563eb;color:#fff;border-radius:20px;font-weight:600;margin-top:8px}';
-  html+'.section{margin-bottom:16px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}';
-  html+'.section-header{padding:12px 16px;background:#f8fafc;font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0}';
-  html+'.section-body{padding:16px}';
+  html+='.meta{text-align:center;color:#64748b;font-size:13px;margin-bottom:24px}';
+  html+='.score-box{text-align:center;padding:20px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border-radius:12px;margin-bottom:24px}';
+  html+='.score-big{font-size:48px;font-weight:700;color:#2563eb}.score-label{color:#64748b;font-size:14px}';
+  html+='.band{display:inline-block;padding:6px 16px;background:#2563eb;color:#fff;border-radius:20px;font-weight:600;margin-top:8px}';
+  html+='.section{margin-bottom:16px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}';
+  html+='.section-header{padding:12px 16px;background:#f8fafc;font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0}';
+  html+='.section-body{padding:16px}';
   html+='@media print{body{padding:0}.no-print{display:none!important}}</style></head><body>';
   html+='<h1>雅思综合水平测试成绩报告</h1>';
-  html+='<div class="meta">藕叶英语教研组研发 | 测试时间：'+saved.date+'</div>';
-  html+='<div class="score-box"><div class="score-big">'+pct+'%</div><div class="score-label">客观题总分</div><div class="band">预估雅思 Band: '+saved.band+'（听力 '+saved.listeningBand+' / 阅读 '+saved.readingBand+'）</div></div>';
+  html+='<div class="meta">藕叶英语教研组研发 | 测试时间：'+new Date().toLocaleString('zh-CN')+'</div>';
+  html+='<div class="score-box"><div class="score-big">'+pct+'%</div><div class="score-label">客观题总分</div><div class="band">预估雅思 Band: '+band+'（听力 '+listeningBand+' / 阅读 '+readingBand+'）</div></div>';
 
-  // Auto-scored sections
   var secData=[
     {name:'词汇量综合测试',key:'vocab',s:scores.vocab},
     {name:'语法综合测试',key:'grammar',s:scores.grammar},
@@ -1072,7 +1139,6 @@ function downloadResults(){
     html+='<div class="section-body">'+buildReviewHTML(sec.key)+'</div></div>';
   });
 
-  // Writing section
   html+='<div class="section"><div class="section-header"><span>写作测试 Writing</span><span style="color:#2563eb">需教师评分</span></div>';
   html+='<div class="section-body">';
   html+='<h2>Writing Task 1 - 图表描述</h2>';
@@ -1085,7 +1151,6 @@ function downloadResults(){
   html+='<div style="margin-top:12px;padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:13px;color:#92400E">教师评分区：______ / 9.0</div>';
   html+='</div></div>';
 
-  // Speaking section
   html+='<div class="section"><div class="section-header"><span>口语测试 Speaking</span><span style="color:#2563eb">需教师评分</span></div>';
   html+='<div class="section-body">';
   html+='<h2>朗读部分 Pronunciation Check-up</h2>';
@@ -1101,9 +1166,25 @@ function downloadResults(){
   html+='</div></div>';
 
   html+='<div style="text-align:center;margin-top:30px;padding-top:16px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px">由 藕叶英语教研组 雅思综合水平测试 生成</div>';
-  html+='<div class="no-print" style="text-align:center;margin-top:16px"><button onclick="window.print()" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">打印此页面</button></div>';
   html+='</body></html>';
 
+  return html;
+}
+
+function downloadResults(){
+  var data=localStorage.getItem('ieltsResults');
+  if(!data){alert('暂无保存的成绩');return;}
+  var saved=JSON.parse(data);
+  var scores=saved.scores;
+  // Update writing content from current inputs
+  scores.writingContent={
+    task1_part1: (document.getElementById('writing1_part1')||{}).value||((scores.writingContent||{}).task1_part1)||'',
+    task1_part2: (document.getElementById('writing1_part2')||{}).value||((scores.writingContent||{}).task1_part2)||'',
+    task1_part3: (document.getElementById('writing1_part3')||{}).value||((scores.writingContent||{}).task1_part3)||'',
+    task2_part1: (document.getElementById('writing2_part1')||{}).value||((scores.writingContent||{}).task2_part1)||'',
+    task2_part2: (document.getElementById('writing2_part2')||{}).value||((scores.writingContent||{}).task2_part2)||''
+  };
+  var html=generateReportHtml(scores);
   var blob=new Blob([html],{type:'text/html;charset=utf-8'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
