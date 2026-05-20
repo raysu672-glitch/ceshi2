@@ -954,33 +954,151 @@ function downloadResults(){
   var data=localStorage.getItem('ieltsResults');
   if(!data){alert('暂无保存的成绩');return;}
   var saved=JSON.parse(data);
-  var content='雅思综合水平测试成绩单\n';
-  content+='='.repeat(30)+'\n\n';
-  content+='测试时间：'+saved.date+'\n';
-  content+='预估雅思Band：'+saved.band+'\n';
-  content+='（听力Band：'+saved.listeningBand+'，阅读Band：'+saved.readingBand+'）\n\n';
-  content+='各模块成绩：\n';
-  content+='-'.repeat(20)+'\n';
-  var names=['词汇量','语法','听写词汇','听力','阅读'];
-  var keys=['vocab','grammar','dictation','listening','reading'];
-  keys.forEach(function(k,i){
-    var s=saved.scores[k];
-    if(s.text){
-      content+=names[i]+'：已完成\n';
-    }else{
-      content+=names[i]+'：'+s.correct+'/'+s.total+' ('+Math.round(s.correct/s.total*100)+'%)\n';
+  var scores=saved.scores;
+  var wc=scores.writingContent||{};
+  var recs=scores.speakingRecordings||{};
+
+  // Build speaking audio HTML
+  function audioBlock(label,id){
+    if(recs[id]){
+      return '<div style="margin-bottom:10px"><div style="font-size:13px;color:#666;margin-bottom:4px">'+label+'</div><audio controls src="'+recs[id]+'" style="width:100%;max-width:400px"></audio></div>';
     }
+    return '<div style="margin-bottom:10px"><div style="font-size:13px;color:#666;margin-bottom:4px">'+label+'</div><div style="color:#999;font-size:13px">未录音</div></div>';
+  }
+
+  // Build writing content HTML
+  function writingBlock(label,value){
+    var v=value||'<span style="color:#999">未作答</span>';
+    return '<div style="margin-bottom:12px"><div style="font-size:13px;color:#666;margin-bottom:4px">'+label+'</div><div style="background:#f8f9fa;border:1px solid #e2e8f0;border-radius:6px;padding:10px;font-size:14px;line-height:1.6;min-height:36px;white-space:pre-wrap">'+v+'</div></div>';
+  }
+
+  // Build review items for auto-scored sections
+  function buildReviewHTML(key){
+    var h='';
+    if(key==='vocab'){
+      var L=['A','B','C','D'];
+      vocabQuestions.forEach(function(item,idx){
+        var ua=userAnswers['vocab_'+idx];var ok=ua===item.answer;
+        h+='<div style="margin-bottom:8px;padding:8px;border-radius:6px;background:'+(ok?'#f0fdf4':'#fef2f2')+'">';
+        h+='<div style="font-size:13px;font-weight:600">Q'+(idx+1)+'. '+item.q+'</div>';
+        h+='<div style="font-size:12px;margin-top:4px;color:'+(ok?'#16a34a':'#dc2626')+'">'+(ok?'✓ 正确':'✗ 错误')+' | 你的答案：'+(ua!==undefined?L[ua]+'. '+item.options[ua]:'未作答');
+        if(!ok) h+=' | 正确答案：'+L[item.answer]+'. '+item.options[item.answer];
+        h+='</div></div>';
+      });
+    }else if(key==='grammar'){
+      var L=['A','B','C','D'];
+      grammarQuestions.forEach(function(item,idx){
+        var ua=userAnswers['grammar_'+idx];var ok=ua===item.answer;
+        h+='<div style="margin-bottom:8px;padding:8px;border-radius:6px;background:'+(ok?'#f0fdf4':'#fef2f2')+'">';
+        h+='<div style="font-size:13px;font-weight:600">Q'+(idx+1)+'. '+item.q+'</div>';
+        h+='<div style="font-size:12px;margin-top:4px;color:'+(ok?'#16a34a':'#dc2626')+'">'+(ok?'✓ 正确':'✗ 错误')+' | 你的答案：'+(ua!==undefined?L[ua]+'. '+item.options[ua]:'未作答');
+        if(!ok) h+=' | 正确答案：'+L[item.answer]+'. '+item.options[item.answer];
+        h+='</div></div>';
+      });
+    }else if(key==='dictation'){
+      dictationWords.forEach(function(word,idx){
+        var inp=document.getElementById('dict_'+idx);
+        var v=inp?inp.value.trim():'';var ok=v.toLowerCase()===word.toLowerCase();
+        h+='<div style="margin-bottom:6px;padding:6px 8px;border-radius:4px;background:'+(ok?'#f0fdf4':'#fef2f2')+';font-size:13px;display:inline-block;margin-right:6px">';
+        h+=(ok?'✓':'✗ ')+' '+word+' | 你的拼写：'+(v||'未作答')+'</div>';
+      });
+    }else if(key==='listening'){
+      for(var i=1;i<=10;i++){
+        var inp=document.getElementById('listen'+i);
+        var v=inp?inp.value.trim():'';var ok=v.toLowerCase().replace(/\s+/g,'')===listening1Answers[i].toLowerCase().replace(/\s+/g,'');
+        h+='<div style="margin-bottom:6px;padding:6px 8px;border-radius:4px;background:'+(ok?'#f0fdf4':'#fef2f2')+';font-size:13px">';
+        h+=(ok?'✓':'✗ ')+' Q'+i+'. 你的答案：'+(v||'未作答')+(ok?'':' | 正确答案：'+listening1Answers[i])+'</div>';
+      }
+      listeningMCQ.forEach(function(item,idx){
+        var ua=userAnswers['listenMCQ_'+idx];var ok=ua===item.answer;
+        h+='<div style="margin-bottom:6px;padding:6px 8px;border-radius:4px;background:'+(ok?'#f0fdf4':'#fef2f2')+';font-size:13px">';
+        h+=(ok?'✓':'✗ ')+' '+item.q+(ok?'':' | 正确答案：'+item.options[item.answer])+'</div>';
+      });
+    }else if(key==='reading'){
+      readingPart1Answers.forEach(function(item,idx){
+        var inp=document.getElementById('read1_'+idx);var v=inp?inp.value.trim():'';var ok=v.toLowerCase().replace(/\s+/g,'')===item.answer.toLowerCase().replace(/\s+/g,'');
+        h+='<div style="margin-bottom:6px;padding:6px 8px;border-radius:4px;background:'+(ok?'#f0fdf4':'#fef2f2')+';font-size:13px">';
+        h+=(ok?'✓':'✗ ')+' Q'+(idx+1)+'. 你的答案：'+(v||'未作答')+(ok?'':' | 正确答案：'+item.answer)+'</div>';
+      });
+      readingPart2Answers.forEach(function(item,idx){
+        var ua=userAnswers['read2_'+idx];var ok=ua===item.answer;
+        h+='<div style="margin-bottom:6px;padding:6px 8px;border-radius:4px;background:'+(ok?'#f0fdf4':'#fef2f2')+';font-size:13px">';
+        h+=(ok?'✓':'✗ ')+' Q'+(idx+6)+'. '+item.q+(ok?'':' | 正确答案：'+item.answer)+'</div>';
+      });
+    }
+    return h;
+  }
+
+  var autoTotal=scores.vocab.correct+scores.grammar.correct+scores.dictation.correct+scores.listening.correct+scores.reading.correct;
+  var autoMax=scores.vocab.total+scores.grammar.total+scores.dictation.total+scores.listening.total+scores.reading.total;
+  var pct=Math.round((autoTotal/autoMax)*100);
+
+  var html='<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>雅思综合水平测试成绩报告</title>';
+  html+='<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:#1a202c;line-height:1.6;padding:20px;max-width:900px;margin:0 auto;background:#fff}';
+  html+='h1{text-align:center;font-size:22px;color:#2563eb;margin-bottom:4px}h2{font-size:16px;color:#2563eb;margin:20px 0 12px;padding-bottom:6px;border-bottom:2px solid #e2e8f0}';
+  html+'.meta{text-align:center;color:#64748b;font-size:13px;margin-bottom:24px}';
+  html+'.score-box{text-align:center;padding:20px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border-radius:12px;margin-bottom:24px}';
+  html+'.score-big{font-size:48px;font-weight:700;color:#2563eb}.score-label{color:#64748b;font-size:14px}';
+  html='.band{display:inline-block;padding:6px 16px;background:#2563eb;color:#fff;border-radius:20px;font-weight:600;margin-top:8px}';
+  html+'.section{margin-bottom:16px;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}';
+  html+'.section-header{padding:12px 16px;background:#f8fafc;font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0}';
+  html+'.section-body{padding:16px}';
+  html+='@media print{body{padding:0}.no-print{display:none!important}}</style></head><body>';
+  html+='<h1>雅思综合水平测试成绩报告</h1>';
+  html+='<div class="meta">藕叶英语教研组研发 | 测试时间：'+saved.date+'</div>';
+  html+='<div class="score-box"><div class="score-big">'+pct+'%</div><div class="score-label">客观题总分</div><div class="band">预估雅思 Band: '+saved.band+'（听力 '+saved.listeningBand+' / 阅读 '+saved.readingBand+'）</div></div>';
+
+  // Auto-scored sections
+  var secData=[
+    {name:'词汇量综合测试',key:'vocab',s:scores.vocab},
+    {name:'语法综合测试',key:'grammar',s:scores.grammar},
+    {name:'听写词汇综合测试',key:'dictation',s:scores.dictation},
+    {name:'听力测试',key:'listening',s:scores.listening},
+    {name:'阅读测试',key:'reading',s:scores.reading}
+  ];
+  secData.forEach(function(sec){
+    var p=Math.round(sec.s.correct/sec.s.total*100);
+    html+='<div class="section"><div class="section-header"><span>'+sec.name+'</span><span style="color:'+(p>=60?'#16a34a':'#dc2626')+'">'+sec.s.correct+'/'+sec.s.total+' ('+p+'%)</span></div>';
+    html+='<div class="section-body">'+buildReviewHTML(sec.key)+'</div></div>';
   });
-  content+='\n写作：已完成（需教师评分）\n';
-  content+='口语：已完成（需教师评分）\n';
-  content+='\n'+'='.repeat(30)+'\n';
-  content+='由 藕叶英语教研组 雅思综合水平测试 生成\n';
-  
-  var blob=new Blob([content],{type:'text/plain;charset=utf-8'});
+
+  // Writing section
+  html+='<div class="section"><div class="section-header"><span>写作测试 Writing</span><span style="color:#2563eb">需教师评分</span></div>';
+  html+='<div class="section-body">';
+  html+='<h2>Writing Task 1 - 图表描述</h2>';
+  html+=writingBlock('Part 1: 开头段首句图形描述',wc.task1_part1);
+  html+=writingBlock('Part 2: Summary 宏观图形趋势概述',wc.task1_part2);
+  html+=writingBlock('Part 3: Main Features 主要特征描述',wc.task1_part3);
+  html+='<h2>Writing Task 2 - 议论文</h2>';
+  html+=writingBlock('Part 1: 表明立场',wc.task2_part1);
+  html+=writingBlock('Part 2: 观点论述',wc.task2_part2);
+  html+='<div style="margin-top:12px;padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:13px;color:#92400E">教师评分区：______ / 9.0</div>';
+  html+='</div></div>';
+
+  // Speaking section
+  html+='<div class="section"><div class="section-header"><span>口语测试 Speaking</span><span style="color:#2563eb">需教师评分</span></div>';
+  html+='<div class="section-body">';
+  html+='<h2>朗读部分 Pronunciation Check-up</h2>';
+  html+=audioBlock('朗读句子 1','read1');
+  html+=audioBlock('朗读句子 2','read2');
+  html+='<h2>问答部分 Answer Questions</h2>';
+  html+=audioBlock('Q1. Do you prefer online shopping or in-store shopping?','q1');
+  html+=audioBlock('Q2. Which type of public transport do you prefer? Why?','q2');
+  html+=audioBlock('Q3. Have you ever posted anything on social media?','q3');
+  html+=audioBlock('Q4. Is it easier to make new friends now? Why?','q4');
+  html+=audioBlock('Q5. What are the differences between those tall buildings in your country?','q5');
+  html+='<div style="margin-top:12px;padding:10px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;font-size:13px;color:#92400E">教师评分区：______ / 9.0</div>';
+  html+='</div></div>';
+
+  html+='<div style="text-align:center;margin-top:30px;padding-top:16px;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px">由 藕叶英语教研组 雅思综合水平测试 生成</div>';
+  html+='<div class="no-print" style="text-align:center;margin-top:16px"><button onclick="window.print()" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer">打印此页面</button></div>';
+  html+='</body></html>';
+
+  var blob=new Blob([html],{type:'text/html;charset=utf-8'});
   var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
   a.href=url;
-  a.download='雅思测试成绩单_'+new Date().toISOString().slice(0,10)+'.txt';
+  a.download='雅思测试成绩报告_'+new Date().toISOString().slice(0,10)+'.html';
   a.click();
   URL.revokeObjectURL(url);
 }
