@@ -422,7 +422,13 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
       </div>
     </div>
     <div id="resultsBreakdown"></div>
-    <div class="nav-buttons" style="margin-top:40px"><button class="btn-nav btn-next" onclick="location.reload()" style="background:linear-gradient(135deg,var(--primary),var(--secondary))"><i class="fas fa-redo"></i> 重新测试</button></div>
+    <div class="nav-buttons" style="margin-top:40px">
+      <button class="btn-nav" onclick="downloadResults()" style="background:#10B981"><i class="fas fa-download"></i> 下载成绩单</button>
+      <button class="btn-nav" onclick="location.reload()" style="background:linear-gradient(135deg,var(--primary),var(--secondary))"><i class="fas fa-redo"></i> 重新测试</button>
+    </div>
+    <div id="savedResults" style="display:none;margin-top:20px;padding:16px;background:#FEF3C7;border-radius:8px;color:#92400E;font-size:14px">
+      <i class="fas fa-info-circle"></i> 您有保存的成绩单在本地，可以点击 <a href="#" onclick="loadSavedResults()" style="color:#92400E;font-weight:bold;text-decoration:underline">查看保存的成绩</a>
+    </div>
   </div>
 </div>
 
@@ -835,10 +841,65 @@ function showResults(scores){
     bh+='</div></div>';
   });
   document.getElementById('resultsBreakdown').innerHTML=bh;
+  
+  // 保存结果到 LocalStorage
+  var savedData={
+    date: new Date().toLocaleString('zh-CN'),
+    totalPct: pct,
+    band: band,
+    listeningBand: listeningBand,
+    readingBand: readingBand,
+    scores: scores,
+    sections: sections
+  };
+  localStorage.setItem('ieltsResults', JSON.stringify(savedData));
+  
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
 function toggleResultSection(idx){var body=document.getElementById('resultBody_'+idx);var header=body.previousElementSibling;body.classList.toggle('open');header.classList.toggle('open')}
+
+function downloadResults(){
+  var data=localStorage.getItem('ieltsResults');
+  if(!data){alert('暂无保存的成绩');return;}
+  var saved=JSON.parse(data);
+  var content='雅思综合水平测试成绩单\n';
+  content+='='.repeat(30)+'\n\n';
+  content+='测试时间：'+saved.date+'\n';
+  content+='预估雅思Band：'+saved.band+'\n';
+  content+='（听力Band：'+saved.listeningBand+'，阅读Band：'+saved.readingBand+'）\n\n';
+  content+='各模块成绩：\n';
+  content+='-'.repeat(20)+'\n';
+  var names=['词汇量','语法','听写词汇','听力','阅读'];
+  var keys=['vocab','grammar','dictation','listening','reading'];
+  keys.forEach(function(k,i){
+    var s=saved.scores[k];
+    if(s.text){
+      content+=names[i]+'：已完成\n';
+    }else{
+      content+=names[i]+'：'+s.correct+'/'+s.total+' ('+Math.round(s.correct/s.total*100)+'%)\n';
+    }
+  });
+  content+='\n写作：已完成（需教师评分）\n';
+  content+='口语：已完成（需教师评分）\n';
+  content+='\n'+'='.repeat(30)+'\n';
+  content+='由 藕叶英语教研组 雅思综合水平测试 生成\n';
+  
+  var blob=new Blob([content],{type:'text/plain;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;
+  a.download='雅思测试成绩单_'+new Date().toISOString().slice(0,10)+'.txt';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function loadSavedResults(){
+  var data=localStorage.getItem('ieltsResults');
+  if(!data){alert('暂无保存的成绩');return;}
+  var saved=JSON.parse(data);
+  showResults(saved.scores);
+}
 
 function buildVocabReview(){
   var h='';var L=['A','B','C','D'];
@@ -979,6 +1040,14 @@ buildReadingPart2();
 buildReadingPart3Headings();
 buildReadingPart3Multi();
 buildReadingPart3Complete();
+
+// 页面加载时检查是否有保存的结果
+(function(){
+  var saved=localStorage.getItem('ieltsResults');
+  if(saved){
+    document.getElementById('savedResults').style.display='block';
+  }
+})();
 </script>
 </body>
 </html>
