@@ -845,6 +845,26 @@ function calculateScores(){
 
   scores.writing={correct:'-',total:'-',time:sectionStartTime[6]||0,text:true};
   scores.speaking={correct:'-',total:'-',time:sectionStartTime[7]||0,text:true};
+
+  // Collect writing content
+  scores.writingContent={
+    task1_part1: (document.getElementById('writing1_part1')||{}).value||'',
+    task1_part2: (document.getElementById('writing1_part2')||{}).value||'',
+    task1_part3: (document.getElementById('writing1_part3')||{}).value||'',
+    task2_part1: (document.getElementById('writing2_part1')||{}).value||'',
+    task2_part2: (document.getElementById('writing2_part2')||{}).value||''
+  };
+
+  // Collect speaking recordings as blob URLs
+  scores.speakingRecordings={};
+  var recIds=['read1','read2','q1','q2','q3','q4','q5'];
+  recIds.forEach(function(id){
+    var audioEl=document.getElementById('audio_'+id);
+    if(audioEl && audioEl.src && audioEl.src.indexOf('blob:')===0){
+      scores.speakingRecordings[id]=audioEl.src;
+    }
+  });
+
   return scores;
 }
 
@@ -907,8 +927,8 @@ function showResults(scores){
     else if(sec.key==='dictation')bh+=buildDictationReview();
     else if(sec.key==='listening')bh+=buildListeningReview();
     else if(sec.key==='reading')bh+=buildReadingReview();
-    else if(sec.key==='writing')bh+='<p style="font-size:14px;color:var(--text-light)">写作部分需要教师人工评分。您的作答已记录。</p>';
-    else if(sec.key==='speaking')bh+='<p style="font-size:14px;color:var(--text-light)">口语部分需要教师人工评分。您的作答已记录。</p>';
+    else if(sec.key==='speaking')bh+=buildSpeakingReview(scores.speakingRecordings);
+    else if(sec.key==='writing')bh+=buildWritingReview(scores.writingContent);
     bh+='</div></div>';
   });
   document.getElementById('resultsBreakdown').innerHTML=bh;
@@ -1097,6 +1117,53 @@ function buildReadingReview(){
     if(!ok)h+='<span class="ri-correct">正确答案：'+item.answer+'</span>';
     h+='</div><div class="ri-explain"><i class="fas fa-lightbulb"></i> '+item.explain+'</div></div>';
   });
+  return h;
+}
+
+function buildWritingReview(wc){
+  if(!wc) return '<p style="font-size:14px;color:var(--text-light)">写作部分需要教师人工评分。您的作答已记录。</p>';
+  var h='<p style="font-size:14px;color:var(--text-light);margin-bottom:16px"><i class="fas fa-pen"></i> 写作部分需要教师人工评分。以下是学生的作答内容：</p>';
+  h+='<div style="margin-bottom:20px"><h4 style="font-size:15px;font-weight:600;margin-bottom:8px;color:var(--primary)">Writing Task 1 - 图表描述</h4>';
+  h+='<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light)">Part 1: 开头段首句图形描述</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;line-height:1.6;min-height:40px;white-space:pre-wrap">'+(wc.task1_part1||'<span style="color:#999">未作答</span>')+'</div></div>';
+  h+='<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light)">Part 2: Summary 宏观图形趋势概述</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;line-height:1.6;min-height:40px;white-space:pre-wrap">'+(wc.task1_part2||'<span style="color:#999">未作答</span>')+'</div></div>';
+  h+='<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light)">Part 3: Main Features 主要特征描述</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;line-height:1.6;min-height:40px;white-space:pre-wrap">'+(wc.task1_part3||'<span style="color:#999">未作答</span>')+'</div></div>';
+  h+='</div>';
+  h+='<div><h4 style="font-size:15px;font-weight:600;margin-bottom:8px;color:var(--primary)">Writing Task 2 - 议论文</h4>';
+  h+='<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light)">Part 1: 表明立场</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;line-height:1.6;min-height:40px;white-space:pre-wrap">'+(wc.task2_part1||'<span style="color:#999">未作答</span>')+'</div></div>';
+  h+='<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light)">Part 2: 观点论述</label><div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:14px;line-height:1.6;min-height:40px;white-space:pre-wrap">'+(wc.task2_part2||'<span style="color:#999">未作答</span>')+'</div></div>';
+  h+='</div>';
+  return h;
+}
+
+function buildSpeakingReview(recordings){
+  if(!recordings || Object.keys(recordings).length===0){
+    return '<p style="font-size:14px;color:var(--text-light)">口语部分需要教师人工评分。学生未录制音频。</p>';
+  }
+  var h='<p style="font-size:14px;color:var(--text-light);margin-bottom:16px"><i class="fas fa-microphone"></i> 口语部分需要教师人工评分。以下是学生的录音：</p>';
+  h+='<div style="margin-bottom:20px"><h4 style="font-size:15px;font-weight:600;margin-bottom:12px;color:var(--primary)">朗读部分 Pronunciation Check-up</h4>';
+  var readLabels={'read1':'朗读句子 1','read2':'朗读句子 2'};
+  ['read1','read2'].forEach(function(id){
+    h+='<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light)">'+readLabels[id]+'</label>';
+    if(recordings[id]){
+      h+='<div style="margin-top:6px"><audio controls src="'+recordings[id]+'" style="width:100%;max-width:400px"></audio></div>';
+    }else{
+      h+='<div style="color:#999;font-size:13px;margin-top:6px">未录音</div>';
+    }
+    h+='</div>';
+  });
+  h+='</div>';
+  h+='<div><h4 style="font-size:15px;font-weight:600;margin-bottom:12px;color:var(--primary)">问答部分 Answer Questions</h4>';
+  var qLabels={'q1':'Q1. Do you prefer online shopping or in-store shopping?','q2':'Q2. Which type of public transport do you prefer? Why?','q3':'Q3. Have you ever posted anything on social media?','q4':'Q4. Is it easier to make new friends now? Why?','q5':'Q5. What are the differences between those tall buildings in your country?'};
+  ['q1','q2','q3','q4','q5'].forEach(function(id){
+    h+='<div style="margin-bottom:12px"><label style="font-size:13px;color:var(--text-light)">'+qLabels[id]+'</label>';
+    if(recordings[id]){
+      h+='<div style="margin-top:6px"><audio controls src="'+recordings[id]+'" style="width:100%;max-width:400px"></audio></div>';
+    }else{
+      h+='<div style="color:#999;font-size:13px;margin-top:6px">未录音</div>';
+    }
+    h+='</div>';
+  });
+  h+='</div>';
   return h;
 }
 
