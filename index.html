@@ -957,8 +957,16 @@ function downloadResults(){
   if(!data){alert('暂无保存的成绩');return;}
   var saved=JSON.parse(data);
   var scores=saved.scores;
-  var wc=scores.writingContent||{};
-  var recs=scores.speakingRecordings||{};
+  // Get writing content from current page inputs (latest data)
+  var wc={
+    task1_part1: (document.getElementById('writing1_part1')||{}).value||((scores.writingContent||{}).task1_part1)||'',
+    task1_part2: (document.getElementById('writing1_part2')||{}).value||((scores.writingContent||{}).task1_part2)||'',
+    task1_part3: (document.getElementById('writing1_part3')||{}).value||((scores.writingContent||{}).task1_part3)||'',
+    task2_part1: (document.getElementById('writing2_part1')||{}).value||((scores.writingContent||{}).task2_part1)||'',
+    task2_part2: (document.getElementById('writing2_part2')||{}).value||((scores.writingContent||{}).task2_part2)||''
+  };
+  // Use current speakingRecordings (base64) instead of saved data (may contain blob URLs)
+  var recs=speakingRecordings||{};
 
   // Build speaking audio HTML
   function audioBlock(label,id){
