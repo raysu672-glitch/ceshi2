@@ -776,7 +776,10 @@ function startRecording(id){
       audioEl.src=url;
       audioEl.style.display='block';
       audioEl.controls=true;
-      speakingRecordings[id]=blob;
+      // Convert to base64 for persistence
+      var reader=new FileReader();
+      reader.onloadend=function(){speakingRecordings[id]=reader.result;};
+      reader.readAsDataURL(blob);
     };
     mediaRecorder.start();
     btn.classList.add('recording');
@@ -855,13 +858,12 @@ function calculateScores(){
     task2_part2: (document.getElementById('writing2_part2')||{}).value||''
   };
 
-  // Collect speaking recordings as blob URLs
+  // Collect speaking recordings (already in base64)
   scores.speakingRecordings={};
   var recIds=['read1','read2','q1','q2','q3','q4','q5'];
   recIds.forEach(function(id){
-    var audioEl=document.getElementById('audio_'+id);
-    if(audioEl && audioEl.src && audioEl.src.indexOf('blob:')===0){
-      scores.speakingRecordings[id]=audioEl.src;
+    if(speakingRecordings[id]){
+      scores.speakingRecordings[id]=speakingRecordings[id];
     }
   });
 
