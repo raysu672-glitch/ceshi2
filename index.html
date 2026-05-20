@@ -108,6 +108,13 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
 .btn-audio:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(37,99,235,.4)}
 .btn-audio.playing{animation:pulse 1.5s infinite}
 @keyframes pulse{0%,100%{box-shadow:0 2px 8px rgba(37,99,235,.3)}50%{box-shadow:0 2px 20px rgba(37,99,235,.5)}}
+.recorder-container{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap}
+.btn-record{display:inline-flex;align-items:center;gap:8px;background:var(--bg);color:var(--primary);border:2px solid var(--primary);padding:10px 20px;border-radius:50px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .3s}
+.btn-record:hover{background:var(--primary);color:#fff}
+.btn-record.recording{background:#e53e3e;border-color:#e53e3e;color:#fff;animation:rec-pulse 1s infinite}
+@keyframes rec-pulse{0%,100%{box-shadow:0 0 0 0 rgba(229,62,62,.4)}50%{box-shadow:0 0 0 10px rgba(229,62,62,0)}}
+.rec-timer{font-size:14px;font-weight:600;color:var(--primary);min-width:50px}
+.btn-record.recording .rec-timer-inline{color:#fff}
 .nav-buttons{display:flex;justify-content:space-between;align-items:center;margin-top:32px;padding-top:20px;border-top:1px solid var(--border)}
 .btn-nav{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;border:none}
 .btn-prev{background:var(--bg);color:var(--text-light);border:1px solid var(--border)}
@@ -370,7 +377,6 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
       <div class="writing-part"><label>Part 1: 开头段首句图形描述</label><textarea id="writing1_part1" placeholder="请描述图表的主要内容..."></textarea></div>
       <div class="writing-part"><label>Part 2: Summary 宏观图形趋势概述</label><textarea id="writing1_part2" placeholder="请概述图表的整体趋势..."></textarea></div>
       <div class="writing-part"><label>Part 3: Main Features 主要特征描述 (不少于30字)</label><textarea id="writing1_part3" placeholder="请描述图表的主要特征..." oninput="updateWordCount(this,'wc_w1p3',30)"></textarea><div class="word-count" id="wc_w1p3">字数：0</div></div>
-      <div class="sample-answer"><button class="btn-reveal" onclick="toggleSample('sample_w1')"><i class="fas fa-eye"></i> 查看参考答案</button><div class="sample-answer-content" id="sample_w1"><strong>Part 1:</strong> The line graph illustrates the rates of smoking among men and women in Someland over a 40-year period from 1960 to 2000.<br><br><strong>Part 2:</strong> Overall, smoking rates for men showed a consistent decline throughout the period, while women's smoking rates initially rose before peaking and then declining. By 2000, the gap between male and female smoking rates had narrowed significantly.<br><br><strong>Part 3:</strong> In 1960, approximately 600 men per 1,000 people were smokers, compared to only about 100 women per 1,000. Male smoking rates declined steadily to around 250 per 1,000 by 2000. Women's smoking rates increased to a peak of about 320 per 1,000 in 1975, remained relatively stable until 1985, and then gradually declined to roughly 200 per 1,000 by 2000.</div></div>
     </div>
 
     <div class="card">
@@ -378,7 +384,6 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
       <div class="writing-prompt"><strong>"Nuclear energy is better than other energy resources in meeting ever-increasing needs of the globe. To what extent do you agree or disagree?"</strong><br><span style="font-size:12px;color:var(--text-light)">[雅思真题]</span></div>
       <div class="writing-part"><label>Part 1: 表明立场 - 同意/不同意/部分同意 (一句话)</label><textarea id="writing2_part1" rows="2" placeholder="请用一句话表明你的立场..."></textarea></div>
       <div class="writing-part"><label>Part 2: 写出同意/不同意/部分同意的其中一个观点并论述 (不少于60字)</label><textarea id="writing2_part2" placeholder="请论述你的观点..." oninput="updateWordCount(this,'wc_w2p2',60)"></textarea><div class="word-count" id="wc_w2p2">字数：0</div></div>
-      <div class="sample-answer"><button class="btn-reveal" onclick="toggleSample('sample_w2')"><i class="fas fa-eye"></i> 查看参考答案</button><div class="sample-answer-content" id="sample_w2"><strong>Part 1:</strong> I partially agree with the statement that nuclear energy is superior to other energy resources, as while it offers significant advantages in terms of efficiency and low carbon emissions, it also poses serious safety and environmental risks that cannot be ignored.<br><br><strong>Part 2:</strong> On one hand, nuclear energy is remarkably efficient and produces minimal greenhouse gas emissions compared to fossil fuels. A single nuclear power plant can generate enormous amounts of electricity, making it an attractive option for countries with high energy demands. Furthermore, nuclear energy provides a stable and reliable power supply, unlike solar and wind energy which are dependent on weather conditions. This reliability is crucial for meeting the ever-increasing energy needs of a growing global population and expanding industrial sector. However, the risks associated with nuclear accidents, such as the disasters at Chernobyl and Fukushima, demonstrate that nuclear energy carries potentially catastrophic consequences. The long-term storage of radioactive waste also remains an unresolved challenge. Therefore, while nuclear energy has its merits, it should be part of a diversified energy strategy rather than being considered the sole solution.</div></div>
     </div>
     <div class="nav-buttons"><button class="btn-nav btn-prev" onclick="goToSection(5)"><i class="fas fa-arrow-left"></i> 上一部分</button><button class="btn-nav btn-next" onclick="goToSection(7)">下一部分 <i class="fas fa-arrow-right"></i></button></div>
   </div>
@@ -390,19 +395,21 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
     <div class="section-header fade-in"><h2>Part 7: 口语测试 Speaking</h2><div class="section-meta"><span><i class="fas fa-microphone"></i> 口语练习</span><span><i class="fas fa-clock"></i> 5分钟</span></div></div>
     <div class="card">
       <h3 style="font-size:16px;font-weight:700;margin-bottom:12px">Pronunciation Check-up</h3>
-      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">请朗读以下句子，注意发音和语调。</p>
+      <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">请朗读以下句子，注意发音和语调。点击录音按钮开始录音。</p>
       <button class="btn-audio" id="btnSpeakDemo" onclick="playSpeakingDemo()"><i class="fas fa-volume-up"></i> 播放示范</button>
       <div class="speaking-sentence">1. "Museums are very important and are very educational. They can teach young people about history, art and science. Some museums are pretty entertaining too. They provide fun activities, videos and stories as part of their exhibitions."</div>
+      <div class="recorder-container"><button class="btn-record" id="btn_rec_read1" onclick="toggleRecording('read1')"><i class="fas fa-microphone"></i> 开始录音</button><span class="rec-timer" id="timer_read1"></span><audio id="audio_read1" controls style="display:none;width:100%;margin-top:8px"></audio></div>
       <div class="speaking-sentence">2. "The main reason for me to travel abroad in the future is that this experience will broaden my horizons and enrich my life experiences, which, I think, will be good for my future career development."</div>
+      <div class="recorder-container"><button class="btn-record" id="btn_rec_read2" onclick="toggleRecording('read2')"><i class="fas fa-microphone"></i> 开始录音</button><span class="rec-timer" id="timer_read2"></span><audio id="audio_read2" controls style="display:none;width:100%;margin-top:8px"></audio></div>
     </div>
     <div class="card">
       <h3 style="font-size:16px;font-weight:700;margin-bottom:12px">Answer The Following Questions</h3>
       <p style="font-size:13px;color:var(--text-light);margin-bottom:16px">请回答以下问题，尽量展开论述。</p>
-      <div class="speaking-question"><label>1. Do you prefer online shopping or in-store shopping?</label><textarea id="speak_q1" placeholder="请输入你的回答..."></textarea><div class="sample-answer"><button class="btn-reveal" onclick="toggleSample('sample_sq1')"><i class="fas fa-eye"></i> 参考答案</button><div class="sample-answer-content" id="sample_sq1">I personally prefer online shopping because it's much more convenient. I can browse products and compare prices from the comfort of my home without having to deal with crowded stores or long queues. However, I do enjoy going to physical stores for certain items like clothes, where I can try things on before buying.</div></div></div>
-      <div class="speaking-question"><label>2. Which type of public transport do you prefer? Why?</label><textarea id="speak_q2" placeholder="请输入你的回答..."></textarea><div class="sample-answer"><button class="btn-reveal" onclick="toggleSample('sample_sq2')"><i class="fas fa-eye"></i> 参考答案</button><div class="sample-answer-content" id="sample_sq2">I prefer the subway because it's fast, reliable, and not affected by traffic congestion. In my city, the subway system is well-developed and covers most areas, making it very convenient for daily commuting. Plus, it's more environmentally friendly than driving a car.</div></div></div>
-      <div class="speaking-question"><label>3. Have you ever posted anything on social media?</label><textarea id="speak_q3" placeholder="请输入你的回答..."></textarea><div class="sample-answer"><button class="btn-reveal" onclick="toggleSample('sample_sq3')"><i class="fas fa-eye"></i> 参考答案</button><div class="sample-answer-content" id="sample_sq3">Yes, I regularly post on social media platforms like WeChat Moments and Instagram. I usually share photos of food I've cooked, places I've visited, or interesting articles I've read. However, I'm careful about privacy and try not to share too much personal information online.</div></div></div>
-      <div class="speaking-question"><label>4. Is it easier to make new friends now? Why?</label><textarea id="speak_q4" placeholder="请输入你的回答..."></textarea><div class="sample-answer"><button class="btn-reveal" onclick="toggleSample('sample_sq4')"><i class="fas fa-eye"></i> 参考答案</button><div class="sample-answer-content" id="sample_sq4">I think it's both easier and harder in different ways. On one hand, social media and dating apps make it easier to connect with people who share similar interests. On the other hand, I feel that people nowadays are more guarded and spend more time on their phones, which can make genuine face-to-face connections more difficult to establish.</div></div></div>
-      <div class="speaking-question"><label>5. What are the differences between those tall buildings in your country?</label><textarea id="speak_q5" placeholder="请输入你的回答..."></textarea><div class="sample-answer"><button class="btn-reveal" onclick="toggleSample('sample_sq5')"><i class="fas fa-eye"></i> 参考答案</button><div class="sample-answer-content" id="sample_sq5">In my country, tall buildings vary greatly in terms of their purpose and design. In city centres, you'll find modern skyscrapers that serve as office buildings for multinational corporations, featuring glass facades and advanced architectural designs. In residential areas, tall buildings are typically apartment complexes built to accommodate the growing urban population. There are also mixed-use buildings that combine commercial spaces on lower floors with residential units above.</div></div></div>
+      <div class="speaking-question"><label>1. Do you prefer online shopping or in-store shopping?</label><div class="recorder-container"><button class="btn-record" id="btn_rec_q1" onclick="toggleRecording('q1')"><i class="fas fa-microphone"></i> 开始录音</button><span class="rec-timer" id="timer_q1"></span><audio id="audio_q1" controls style="display:none;width:100%;margin-top:8px"></audio></div></div>
+      <div class="speaking-question"><label>2. Which type of public transport do you prefer? Why?</label><div class="recorder-container"><button class="btn-record" id="btn_rec_q2" onclick="toggleRecording('q2')"><i class="fas fa-microphone"></i> 开始录音</button><span class="rec-timer" id="timer_q2"></span><audio id="audio_q2" controls style="display:none;width:100%;margin-top:8px"></audio></div></div>
+      <div class="speaking-question"><label>3. Have you ever posted anything on social media?</label><div class="recorder-container"><button class="btn-record" id="btn_rec_q3" onclick="toggleRecording('q3')"><i class="fas fa-microphone"></i> 开始录音</button><span class="rec-timer" id="timer_q3"></span><audio id="audio_q3" controls style="display:none;width:100%;margin-top:8px"></audio></div></div>
+      <div class="speaking-question"><label>4. Is it easier to make new friends now? Why?</label><div class="recorder-container"><button class="btn-record" id="btn_rec_q4" onclick="toggleRecording('q4')"><i class="fas fa-microphone"></i> 开始录音</button><span class="rec-timer" id="timer_q4"></span><audio id="audio_q4" controls style="display:none;width:100%;margin-top:8px"></audio></div></div>
+      <div class="speaking-question"><label>5. What are the differences between those tall buildings in your country?</label><div class="recorder-container"><button class="btn-record" id="btn_rec_q5" onclick="toggleRecording('q5')"><i class="fas fa-microphone"></i> 开始录音</button><span class="rec-timer" id="timer_q5"></span><audio id="audio_q5" controls style="display:none;width:100%;margin-top:8px"></audio></div></div>
     </div>
     <div class="nav-buttons"><button class="btn-nav btn-prev" onclick="goToSection(6)"><i class="fas fa-arrow-left"></i> 上一部分</button><button class="btn-nav btn-submit" onclick="submitTest()"><i class="fas fa-check-circle"></i> 提交测试</button></div>
   </div>
@@ -734,6 +741,69 @@ function playSpeakingDemo(){
   var t2="The main reason for me to travel abroad in the future is that this experience will broaden my horizons and enrich my life experiences, which, I think, will be good for my future career development.";
   speak(t1,0.85,function(){setTimeout(function(){speak(t2,0.85,function(){btn.classList.remove('playing');btn.innerHTML='<i class="fas fa-volume-up"></i> 播放示范';showToast('示范播放完毕')})},1000)});
 }
+
+// ===== RECORDING =====
+var mediaRecorder=null;
+var audioChunks={};
+var recordingTimers={};
+var recordingSeconds={};
+
+function toggleRecording(id){
+  var btn=document.getElementById('btn_rec_'+id);
+  var timerEl=document.getElementById('timer_'+id);
+  var audioEl=document.getElementById('audio_'+id);
+  if(mediaRecorder && mediaRecorder.state==='recording'){
+    stopRecording(id);
+  }else{
+    startRecording(id);
+  }
+}
+
+function startRecording(id){
+  var btn=document.getElementById('btn_rec_'+id);
+  var timerEl=document.getElementById('timer_'+id);
+  var audioEl=document.getElementById('audio_'+id);
+  audioEl.style.display='none';
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(stream){
+    mediaRecorder=new MediaRecorder(stream);
+    audioChunks[id]=[];
+    recordingSeconds[id]=0;
+    mediaRecorder.ondataavailable=function(e){if(e.data.size>0)audioChunks[id].push(e.data)};
+    mediaRecorder.onstop=function(){
+      stream.getTracks().forEach(function(t){t.stop()});
+      var blob=new Blob(audioChunks[id],{type:'audio/webm'});
+      var url=URL.createObjectURL(blob);
+      audioEl.src=url;
+      audioEl.style.display='block';
+      audioEl.controls=true;
+      speakingRecordings[id]=blob;
+    };
+    mediaRecorder.start();
+    btn.classList.add('recording');
+    btn.innerHTML='<i class="fas fa-stop"></i> 停止录音';
+    recordingTimers[id]=setInterval(function(){
+      recordingSeconds[id]++;
+      var m=Math.floor(recordingSeconds[id]/60);
+      var s=recordingSeconds[id]%60;
+      timerEl.textContent=(m>0?m+':':'')+String(s).padStart(2,'0');
+    },1000);
+  }).catch(function(err){
+    showToast('无法访问麦克风，请检查浏览器权限设置');
+  });
+}
+
+function stopRecording(id){
+  var btn=document.getElementById('btn_rec_'+id);
+  var timerEl=document.getElementById('timer_'+id);
+  if(mediaRecorder && mediaRecorder.state==='recording'){
+    mediaRecorder.stop();
+  }
+  btn.classList.remove('recording');
+  btn.innerHTML='<i class="fas fa-microphone"></i> 重新录音';
+  if(recordingTimers[id]){clearInterval(recordingTimers[id]);recordingTimers[id]=null}
+}
+
+var speakingRecordings={};
 
 // ===== SUBMIT =====
 function submitTest(){
