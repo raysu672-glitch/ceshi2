@@ -469,12 +469,17 @@ var TEACHER_EMAIL = 'oyenglish100@163.com';
   emailjs.init(EMAILJS_CONFIG.publicKey);
 })();
 
-// 发送成绩报告给老师（带附件）
+// 发送成绩报告给老师
 function sendReportToTeacher(reportHtml, studentInfo){
   var teacherEmail = TEACHER_EMAIL;
   
-  // 将HTML转换为Base64
-  var base64Content = btoa(unescape(encodeURIComponent(reportHtml)));
+  // 提取报告中的纯文本摘要
+  var textSummary = '雅思综合水平测试成绩报告\n' +
+    '学生：' + (studentInfo.name || '未知') + '\n' +
+    '总分：' + (studentInfo.totalScore || '0%') + '\n' +
+    '预估Band：' + (studentInfo.band || '-') + '\n' +
+    '测试时间：' + new Date().toLocaleString('zh-CN') + '\n\n' +
+    '详细报告请查看附件HTML文件。';
   
   return emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, {
     to_email: teacherEmail,
@@ -482,15 +487,9 @@ function sendReportToTeacher(reportHtml, studentInfo){
     student_email: studentInfo.email || '',
     test_date: new Date().toLocaleString('zh-CN'),
     total_score: studentInfo.totalScore || '0%',
-    band_score: studentInfo.band || '-'
-  }, {
-    // 附件参数
-    attachments: [
-      {
-        name: '雅思测试成绩报告_' + studentInfo.name + '_' + new Date().toISOString().slice(0,10) + '.html',
-        data: base64Content
-      }
-    ]
+    band_score: studentInfo.band || '-',
+    message: textSummary,
+    report_html: reportHtml
   }).then(function(response){
     console.log('邮件发送成功:', response);
     return {status: 'success', response: response};
