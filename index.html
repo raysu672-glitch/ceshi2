@@ -473,16 +473,12 @@ var TEACHER_EMAIL = 'oyenglish100@163.com';
 function sendReportToTeacher(reportHtml, studentInfo){
   var teacherEmail = TEACHER_EMAIL;
   
-  // 简化邮件内容，避免模板变量不匹配
+  // 使用EmailJS默认模板支持的变量名
   var templateParams = {
     to_email: teacherEmail,
-    from_name: '雅思综合水平测试系统',
-    student_name: studentInfo.name || '未知学生',
-    student_email: studentInfo.email || '未填写',
-    test_date: new Date().toLocaleString('zh-CN'),
-    total_score: studentInfo.totalScore || '0%',
-    band_score: studentInfo.band || '-',
-    message: '学生 ' + (studentInfo.name || '未知') + ' 完成了雅思综合水平测试，总分：' + (studentInfo.totalScore || '0%') + '，预估Band：' + (studentInfo.band || '-')
+    to_name: '老师',
+    from_name: '雅思测试系统',
+    message: '学生：' + (studentInfo.name || '未知') + '\n邮箱：' + (studentInfo.email || '未填写') + '\n时间：' + new Date().toLocaleString('zh-CN') + '\n总分：' + (studentInfo.totalScore || '0%') + '\nBand：' + (studentInfo.band || '-')
   };
   
   console.log('正在发送邮件...', templateParams);
@@ -494,14 +490,6 @@ function sendReportToTeacher(reportHtml, studentInfo){
     })
     .catch(function(error){
       console.error('邮件发送失败:', error);
-      // 显示详细错误信息
-      var errorMsg = '发送失败';
-      if(error && error.text){
-        errorMsg += ': ' + error.text;
-      } else if(error && error.message){
-        errorMsg += ': ' + error.message;
-      }
-      alert(errorMsg + '\n\n请检查EmailJS模板变量是否正确设置：to_email, student_name, student_email, test_date, total_score, band_score, message');
       return {status: 'error', error: error};
     });
 }
