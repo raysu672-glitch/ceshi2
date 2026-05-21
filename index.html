@@ -473,23 +473,34 @@ var TEACHER_EMAIL = 'oyenglish100@163.com';
 function sendReportToTeacher(reportHtml, studentInfo){
   var teacherEmail = TEACHER_EMAIL;
   
+  // 检查学生是否填写了姓名
+  if(!studentInfo.name || studentInfo.name.trim() === ''){
+    showToast('请先填写学生姓名');
+    return Promise.resolve({status: 'error', error: '未填写姓名'});
+  }
+  
   // 使用EmailJS默认模板支持的变量名
   var templateParams = {
     to_email: teacherEmail,
     to_name: '老师',
     from_name: '雅思测试系统',
-    message: '学生：' + (studentInfo.name || '未知') + '\n邮箱：' + (studentInfo.email || '未填写') + '\n时间：' + new Date().toLocaleString('zh-CN') + '\n总分：' + (studentInfo.totalScore || '0%') + '\nBand：' + (studentInfo.band || '-')
+    message: '学生：' + studentInfo.name + '\n邮箱：' + (studentInfo.email || '未填写') + '\n时间：' + new Date().toLocaleString('zh-CN') + '\n总分：' + (studentInfo.totalScore || '0%') + '\nBand：' + (studentInfo.band || '-')
   };
   
   console.log('正在发送邮件...', templateParams);
+  showToast('正在发送邮件...');
   
   return emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, templateParams)
     .then(function(response){
       console.log('邮件发送成功:', response);
+      showToast('邮件发送成功！');
       return {status: 'success', response: response};
     })
     .catch(function(error){
       console.error('邮件发送失败:', error);
+      var errorText = error.text || error.message || '未知错误';
+      showToast('邮件发送失败: ' + errorText);
+      alert('邮件发送失败: ' + errorText + '\n\n请检查:\n1. EmailJS模板是否正确设置\n2. 163邮箱是否拦截了邮件（请检查垃圾邮件）\n3. 或使用Gmail等其他邮箱');
       return {status: 'error', error: error};
     });
 }
