@@ -469,7 +469,7 @@ var TEACHER_EMAIL = 'oyenglish100@163.com';
   emailjs.init(EMAILJS_CONFIG.publicKey);
 })();
 
-// 发送成绩报告给老师
+// 发送成绩报告给老师（使用mailto方式）
 function sendReportToTeacher(reportHtml, studentInfo){
   var teacherEmail = TEACHER_EMAIL;
   
@@ -479,30 +479,35 @@ function sendReportToTeacher(reportHtml, studentInfo){
     return Promise.resolve({status: 'error', error: '未填写姓名'});
   }
   
-  // 使用EmailJS默认模板支持的变量名
-  var templateParams = {
-    to_email: teacherEmail,
-    to_name: '老师',
-    from_name: '雅思测试系统',
-    message: '学生：' + studentInfo.name + '\n邮箱：' + (studentInfo.email || '未填写') + '\n时间：' + new Date().toLocaleString('zh-CN') + '\n总分：' + (studentInfo.totalScore || '0%') + '\nBand：' + (studentInfo.band || '-')
-  };
+  // 生成邮件主题和内容
+  var subject = '雅思测试成绩 - ' + studentInfo.name;
+  var body = '学生姓名：' + studentInfo.name + '\n';
+  body += '学生邮箱：' + (studentInfo.email || '未填写') + '\n';
+  body += '测试时间：' + new Date().toLocaleString('zh-CN') + '\n';
+  body += '客观题总分：' + (studentInfo.totalScore || '0%') + '\n';
+  body += '预估雅思Band：' + (studentInfo.band || '-') + '\n\n';
+  body += '请查看附件中的完整成绩报告HTML文件。';
   
-  console.log('正在发送邮件...', templateParams);
-  showToast('正在发送邮件...');
+  // 创建mailto链接
+  var mailtoLink = 'mailto:' + teacherEmail + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
   
-  return emailjs.send(EMAILJS_CONFIG.serviceId, EMAILJS_CONFIG.templateId, templateParams)
-    .then(function(response){
-      console.log('邮件发送成功:', response);
-      showToast('邮件发送成功！');
-      return {status: 'success', response: response};
-    })
-    .catch(function(error){
-      console.error('邮件发送失败:', error);
-      var errorText = error.text || error.message || '未知错误';
-      showToast('邮件发送失败: ' + errorText);
-      alert('邮件发送失败: ' + errorText + '\n\n请检查:\n1. EmailJS模板是否正确设置\n2. 163邮箱是否拦截了邮件（请检查垃圾邮件）\n3. 或使用Gmail等其他邮箱');
-      return {status: 'error', error: error};
-    });
+  // 先下载HTML文件
+  var blob = new Blob([reportHtml], {type: 'text/html;charset=utf-8'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = '雅思测试成绩报告_' + studentInfo.name + '_' + new Date().toISOString().slice(0,10) + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+  
+  showToast('成绩报告已下载，请发送给老师');
+  
+  // 延迟打开邮件客户端
+  setTimeout(function(){
+    window.open(mailtoLink, '_blank');
+  }, 1000);
+  
+  return Promise.resolve({status: 'success'});
 }
 
 // ===== DATA =====
