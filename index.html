@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <style>
 :root{--primary:#2563EB;--primary-light:#3B82F6;--primary-dark:#1D4ED8;--secondary:#0891B2;--secondary-light:#06B6D4;--accent:#F59E0B;--success:#10B981;--success-light:#D1FAE5;--error:#EF4444;--error-light:#FEE2E2;--warning:#F59E0B;--bg:#F8FAFC;--card:#FFFFFF;--text:#1E293B;--text-light:#64748B;--text-lighter:#94A3B8;--border:#E2E8F0;--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);--shadow-md:0 4px 6px -1px rgba(0,0,0,.1),0 2px 4px -1px rgba(0,0,0,.06);--shadow-lg:0 10px 15px -3px rgba(0,0,0,.1),0 4px 6px -2px rgba(0,0,0,.05);--radius:12px;--radius-sm:8px;--radius-lg:16px}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -453,8 +454,16 @@ body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-se
 </div>
 
 <script>
+// ===== SUPABASE CONFIG =====
+// Supabase 配置
+var SUPABASE_URL = 'https://xoyctsbcrfwhhrxkerwr.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpobWN5aWlsZm5kcGRpeXV0bnp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MDc5OTAsImV4cCI6MjA5NDI4Mzk5MH0.XS_Ewu1GPMYuep6X9wPdzKjtqIwQhkt9ptpv73dLWj4';
+
+// 初始化 Supabase
+var supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ===== EMAILJS CONFIG =====
-// EmailJS 配置
+// EmailJS 配置（备用）
 var EMAILJS_CONFIG = {
   publicKey: 'SXI_6F9T5uXFWzmov',
   serviceId: 'service_puc2i1z',
@@ -468,6 +477,45 @@ var TEACHER_EMAIL = 'oyenglish100@163.com';
 (function(){
   emailjs.init(EMAILJS_CONFIG.publicKey);
 })();
+
+// 保存成绩报告到 Supabase
+async function saveReportToSupabase(reportHtml, studentInfo, scores){
+  try{
+    showToast('正在保存到云端...');
+    
+    // 准备数据
+    var reportData = {
+      student_name: studentInfo.name || '未知',
+      student_email: studentInfo.email || '',
+      total_score: studentInfo.totalScore || '0%',
+      band_score: studentInfo.band || '-',
+      test_date: new Date().toISOString(),
+      report_html: reportHtml,
+      scores: scores
+    };
+    
+    // 保存到 Supabase
+    var { data, error } = await supabase
+      .from('ielts_reports')
+      .insert([reportData])
+      .select();
+    
+    if(error){
+      console.error('Supabase保存失败:', error);
+      showToast('云端保存失败: ' + error.message);
+      return {status: 'error', error: error};
+    }
+    
+    console.log('Supabase保存成功:', data);
+    showToast('成绩报告已保存到云端！');
+    return {status: 'success', data: data};
+    
+  }catch(err){
+    console.error('Supabase保存异常:', err);
+    showToast('云端保存异常');
+    return {status: 'error', error: err};
+  }
+}
 
 // 发送成绩报告给老师（使用mailto方式）
 function sendReportToTeacher(reportHtml, studentInfo){
@@ -886,9 +934,9 @@ function submitTest(){
   document.getElementById('progressBarContainer').classList.remove('active');
   var scores=calculateScores();
   showResults(scores);
-  
-  // 自动生成报告并发送给老师
-  setTimeout(function(){
+
+  // 自动生成报告并保存到云端
+  setTimeout(async function(){
     var reportHtml = generateReportHtml(scores);
     var studentName = document.getElementById('studentName')?.value || '未知学生';
     var studentEmail = document.getElementById('studentEmail')?.value || '';
@@ -898,17 +946,22 @@ function submitTest(){
     var listeningBand=getListeningBand(scores.listening.correct,scores.dictation.correct);
     var readingBand=getReadingBand(scores.reading.correct,scores.vocab.correct);
     var band=getOverallBand(listeningBand,readingBand);
-    
-    sendReportToTeacher(reportHtml, {
+
+    var studentInfo = {
       name: studentName,
       email: studentEmail,
       totalScore: pct+'%',
       band: band
-    }).then(function(result){
+    };
+
+    // 同时保存到 Supabase 和发送邮件
+    await saveReportToSupabase(reportHtml, studentInfo, scores);
+
+    sendReportToTeacher(reportHtml, studentInfo).then(function(result){
       if(result.status === 'success'){
         showToast('成绩报告已发送给老师！');
       } else if(result.status === 'error'){
-        showToast('发送失败，请手动下载发送');
+        showToast('邮件发送失败，但已保存到云端');
       }
     });
   }, 500);

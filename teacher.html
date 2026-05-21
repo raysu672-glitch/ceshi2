@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>老师查看 - 雅思综合水平测试成绩</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+:root{--primary:#2563EB;--primary-light:#3B82F6;--primary-dark:#1D4ED8;--secondary:#0891B2;--success:#10B981;--error:#EF4444;--bg:#F8FAFC;--card:#FFFFFF;--text:#1E293B;--text-light:#64748B;--border:#E2E8F0;--shadow:0 1px 3px rgba(0,0,0,.1),0 1px 2px rgba(0,0,0,.06);--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans SC','Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh}
+.container{max-width:1200px;margin:0 auto;padding:20px}
+.header{text-align:center;margin-bottom:32px;padding:24px;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow)}
+.header h1{font-size:24px;color:var(--primary);margin-bottom:8px}
+.header p{color:var(--text-light);font-size:14px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px}
+.stat-card{background:var(--card);padding:20px;border-radius:var(--radius);box-shadow:var(--shadow);text-align:center}
+.stat-card .number{font-size:32px;font-weight:700;color:var(--primary)}
+.stat-card .label{font-size:14px;color:var(--text-light);margin-top:4px}
+.report-list{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.report-item{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:16px;cursor:pointer;transition:background .2s}
+.report-item:hover{background:#f8fafc}
+.report-item:last-child{border-bottom:none}
+.report-info{flex:1}
+.report-name{font-weight:600;font-size:16px;margin-bottom:4px}
+.report-meta{font-size:13px;color:var(--text-light)}
+.report-score{text-align:right}
+.report-score .score{font-size:20px;font-weight:700;color:var(--primary)}
+.report-score .band{font-size:13px;color:var(--text-light)}
+.loading{text-align:center;padding:40px;color:var(--text-light)}
+.empty{text-align:center;padding:60px 20px;color:var(--text-light)}
+.empty i{font-size:48px;margin-bottom:16px;color:var(--border)}
+.refresh-btn{position:fixed;bottom:24px;right:24px;width:56px;height:56px;background:var(--primary);color:#fff;border:none;border-radius:50%;cursor:pointer;box-shadow:0 4px 12px rgba(37,99,235,.4);font-size:20px;transition:transform .2s}
+.refresh-btn:hover{transform:scale(1.1)}
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
+.modal.active{display:flex}
+.modal-content{background:var(--card);border-radius:var(--radius);width:100%;max-width:900px;max-height:90vh;overflow:auto;position:relative}
+.modal-close{position:absolute;top:16px;right:16px;width:36px;height:36px;background:var(--bg);border:none;border-radius:50%;cursor:pointer;font-size:18px;color:var(--text)}
+.modal-body{padding:24px}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1><i class="fas fa-graduation-cap"></i> 雅思综合水平测试 - 老师查看</h1>
+    <p>查看所有学生的测试成绩报告</p>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card">
+      <div class="number" id="totalCount">-</div>
+      <div class="label">总报告数</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" id="todayCount">-</div>
+      <div class="label">今日提交</div>
+    </div>
+    <div class="stat-card">
+      <div class="number" id="avgScore">-</div>
+      <div class="label">平均分数</div>
+    </div>
+  </div>
+
+  <div class="report-list" id="reportList">
+    <div class="loading">
+      <i class="fas fa-spinner fa-spin"></i> 加载中...
+    </div>
+  </div>
+</div>
+
+<button class="refresh-btn" onclick="loadReports()" title="刷新">
+  <i class="fas fa-sync-alt"></i>
+</button>
+
+<div class="modal" id="reportModal">
+  <div class="modal-content">
+    <button class="modal-close" onclick="closeModal()">
+      <i class="fas fa-times"></i>
+    </button>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// Supabase 配置
+var SUPABASE_URL = 'https://xoyctsbcrfwhhrxkerwr.supabase.co';
+var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpobWN5aWlsZm5kcGRpeXV0bnp1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg3MDc5OTAsImV4cCI6MjA5NDI4Mzk5MH0.XS_Ewu1GPMYuep6X9wPdzKjtqIwQhkt9ptpv73dLWj4';
+var supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// 加载报告列表
+async function loadReports(){
+  var listEl = document.getElementById('reportList');
+  listEl.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> 加载中...</div>';
+
+  try{
+    var { data, error } = await supabase
+      .from('ielts_reports')
+      .select('*')
+      .order('test_date', { ascending: false });
+
+    if(error){
+      console.error('加载失败:', error);
+      listEl.innerHTML = '<div class="empty"><i class="fas fa-exclamation-circle"></i><p>加载失败: ' + error.message + '</p></div>';
+      return;
+    }
+
+    if(!data || data.length === 0){
+      listEl.innerHTML = '<div class="empty"><i class="fas fa-inbox"></i><p>暂无成绩报告</p></div>';
+      updateStats(0, 0, '-');
+      return;
+    }
+
+    // 更新统计
+    var today = new Date().toISOString().slice(0, 10);
+    var todayCount = data.filter(r => r.test_date && r.test_date.startsWith(today)).length;
+    var avgScore = Math.round(data.reduce((sum, r) => {
+      var score = parseInt(r.total_score) || 0;
+      return sum + score;
+    }, 0) / data.length);
+    updateStats(data.length, todayCount, avgScore + '%');
+
+    // 渲染列表
+    var html = '';
+    data.forEach(function(report){
+      var date = new Date(report.test_date).toLocaleString('zh-CN');
+      html += '<div class="report-item" onclick="showReport(' + report.id + ')">';
+      html += '<div class="report-info">';
+      html += '<div class="report-name">' + (report.student_name || '未知学生') + '</div>';
+      html += '<div class="report-meta">' + date + ' · ' + (report.student_email || '无邮箱') + '</div>';
+      html += '</div>';
+      html += '<div class="report-score">';
+      html += '<div class="score">' + (report.total_score || '0%') + '</div>';
+      html += '<div class="band">Band ' + (report.band_score || '-') + '</div>';
+      html += '</div>';
+      html += '</div>';
+    });
+    listEl.innerHTML = html;
+
+  }catch(err){
+    console.error('加载异常:', err);
+    listEl.innerHTML = '<div class="empty"><i class="fas fa-exclamation-circle"></i><p>加载异常</p></div>';
+  }
+}
+
+// 更新统计
+function updateStats(total, today, avg){
+  document.getElementById('totalCount').textContent = total;
+  document.getElementById('todayCount').textContent = today;
+  document.getElementById('avgScore').textContent = avg;
+}
+
+// 显示报告详情
+async function showReport(id){
+  try{
+    var { data, error } = await supabase
+      .from('ielts_reports')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if(error || !data){
+      alert('加载报告失败');
+      return;
+    }
+
+    document.getElementById('modalBody').innerHTML = data.report_html || '<p>无报告内容</p>';
+    document.getElementById('reportModal').classList.add('active');
+
+  }catch(err){
+    console.error('加载报告异常:', err);
+    alert('加载报告异常');
+  }
+}
+
+// 关闭弹窗
+function closeModal(){
+  document.getElementById('reportModal').classList.remove('active');
+}
+
+// 点击弹窗外部关闭
+document.getElementById('reportModal').addEventListener('click', function(e){
+  if(e.target === this) closeModal();
+});
+
+// 页面加载时自动加载
+loadReports();
+</script>
+</body>
+</html>
